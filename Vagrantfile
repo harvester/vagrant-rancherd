@@ -17,7 +17,8 @@ role: cluster-init
 token: somethingrandom
 kubernetesVersion: stable:rke2
 rancherVersion: v2.6-44b8030a00b29f9f5354c645f3a90ede2eea53e0-head
-features: multi-cluster-management=false
+rancherValues:
+  features: multi-cluster-management=false
 EOF
 
 curl -fL https://raw.githubusercontent.com/rancher/rancherd/master/install.sh | sh -
