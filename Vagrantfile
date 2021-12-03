@@ -2,26 +2,13 @@
 $script1 = <<-SCRIPT1
 zypper ref
 
+zypper rr -a && zypper ar  http://free.nchc.org.tw/opensuse/update/leap/15.3/oss/ update && zypper ar http://free.nchc.org.tw/opensuse/distribution/leap/15.3/repo/oss/ oss
 zypper in -y apparmor-parser iptables wget
 
-
-mkdir -p /etc/rancher/rke2/config.yaml.d/
-
-cat > /etc/rancher/rke2/config.yaml.d/90-harvester-server.yaml <<EOF
-disable: rke2-ingress-nginx
-EOF
-
-mkdir -p /etc/rancher/rancherd
-cat > /etc/rancher/rancherd/config.yaml << EOF
-role: cluster-init
-token: somethingrandom
-kubernetesVersion: stable:rke2
-rancherVersion: v2.6-44b8030a00b29f9f5354c645f3a90ede2eea53e0-head
-rancherValues:
-  features: multi-cluster-management=false
-EOF
-
-curl -fL https://raw.githubusercontent.com/rancher/rancherd/master/install.sh | sh -
+ARCH=amd64
+KUBECTL_VERSION="v1.20.4"
+curl -sfL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/${ARCH}/kubectl > /usr/bin/kubectl && \
+    chmod +x /usr/bin/kubectl
 
 SCRIPT1
 
@@ -35,7 +22,21 @@ Vagrant.configure("2") do |config|
       lv.connect_via_ssh = false
       lv.qemu_use_session = false
       lv.cpu_mode = 'host-passthrough'
-      lv.memory = 2048
+      lv.memory = 4096
+      lv.cpus = 4
+
+      lv.storage :file, :size => '50G'
+      lv.graphics_ip = '0.0.0.0'
+    end
+  end
+
+  config.vm.define "node2" do |node|
+    node.vm.hostname = "node2"
+    node.vm.provider "libvirt" do |lv|
+      lv.connect_via_ssh = false
+      lv.qemu_use_session = false
+      lv.cpu_mode = 'host-passthrough'
+      lv.memory = 4096
       lv.cpus = 4
 
       lv.storage :file, :size => '50G'
