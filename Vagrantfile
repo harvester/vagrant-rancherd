@@ -11,6 +11,32 @@ SCRIPT0
 
 $script1 = <<-SCRIPT1
 
+curl -sfL https://github.com/rancher/wharfie/releases/download/v0.5.2/wharfie-amd64  -o /usr/local/bin/wharfie && chmod +x /usr/local/bin/wharfie
+curl -sfL https://github.com/mikefarah/yq/releases/download/v4.14.1/yq_linux_amd64 -o /usr/bin/yq && chmod +x /usr/bin/yq
+
+cat > /etc/bash.bashrc.local <<EOF
+if [ -z "$KUBECONFIG" ]; then
+    if [ -e /etc/rancher/rke2/rke2.yaml ]; then
+        export KUBECONFIG="/etc/rancher/rke2/rke2.yaml"
+    else
+        export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
+    fi
+fi
+export PATH="${PATH}:/var/lib/rancher/rke2/bin"
+if [ -z "$CONTAINER_RUNTIME_ENDPOINT" ]; then
+    export CONTAINER_RUNTIME_ENDPOINT=unix:///var/run/k3s/containerd/containerd.sock
+fi
+if [ -z "$IMAGE_SERVICE_ENDPOINT" ]; then
+    export IMAGE_SERVICE_ENDPOINT=unix:///var/run/k3s/containerd/containerd.sock
+fi
+
+# For ctr
+if [ -z "$CONTAINERD_ADDRESS" ]; then
+    export CONTAINERD_ADDRESS=/run/k3s/containerd/containerd.sock
+fi
+EOF
+
+
 mkdir -p /etc/rancher/rancherd
 cat > /etc/rancher/rancherd/config.yaml << EOF
 role: cluster-init
