@@ -1,7 +1,7 @@
 require 'yaml'
 
-@root_dir = File.dirname(File.expand_path(__FILE__))
-@settings = YAML.load_file(File.join(@root_dir, "settings.yaml"))
+$root_dir = File.dirname(File.expand_path(__FILE__))
+@settings = YAML.load_file(File.join($root_dir, "settings.yaml"))
 $workaround = "false"
 
 def detect_runtime
@@ -26,7 +26,7 @@ def detect_runtime
     exit(1)
   end
 
-  File.open(File.join(@root_dir, "runtime"), "w") { |f| f.write runtime_type }
+  File.open(File.join($root_dir, "runtime"), "w") { |f| f.write runtime_type }
 end
 
 detect_runtime
@@ -115,16 +115,27 @@ PROVISION_RANCHERD
 
 Vagrant.configure("2") do |config|
   config.vm.box = "opensuse/Leap-15.3.x86_64"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   (1..4).each do |i|
     config.vm.define "node#{i}" do |node|
       node.vm.hostname = "node#{i}"
       node.vm.provider "libvirt" do |lv|
+        lv.driver = @settings['driver']
         lv.connect_via_ssh = false
         lv.qemu_use_session = false
-        lv.cpu_mode = 'host-passthrough'
+
+        if @settings['driver'] == 'kvm'
+          lv.cpu_mode = 'host-passthrough'
+        end
+
         lv.memory = 4096
         lv.cpus = 4
+
+        # if @settings['ci']
+        #   lv.management_network_name = 'vagrant-libvirt-ci'
+        #   lv.management_network_address = '192.168.124.0/24'
+        # end
 
         lv.storage :file, :size => '50G'
         lv.graphics_ip = '0.0.0.0'

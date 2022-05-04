@@ -1,3 +1,7 @@
-server_ip: 192.168.121.124
-kubernetes_version: v1.22.9+k3s1
+server_ip: 192.168.121.167
+kubernetes_version: v1.23.6+k3s1
 rancher_version: v2.6.4
+rancher_admin_passwd: admin
+
+driver: kvm
+ci: false
