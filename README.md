@@ -1,10 +1,9 @@
-# Vagrantfile for testing rancherd deployment
+# Vagrantfile for deploying RKE2/K3s clusters with Rancherd
 
 ## Requirements
 
-- vagrant
-- vagrant-libvirt
-
+- Vagrant
+- Vagrant-libvirt
 
 ## Usage
 
@@ -12,9 +11,8 @@
 Edit `settings.yaml` to modify `kubernetes_version` or `rancher_version`:
 
 ```
-server_ip: 192.168.121.79
-kubernetes_version: v1.21.7+rke2r1
-rancher_version: v2.6-11a7451ffee557897197fc624af03ac6fd34a9f0-head
+kubernetes_version: v1.23.6+k3s1
+rancher_version: v2.6.4
 ```
 
 Provision first node:
@@ -26,13 +24,13 @@ vagrant up node1
 To generate a kubeconfig file, run:
 
 ```
-./rke2-env.sh
+./kube-env.sh
 ```
 
 A file called `kubeconfig` will be created and you can export `KUBECONFIG` environment variable to it.
 
 
-### Add more nodes
+### Add more worker nodes
 
 Update `server_ip` in settings:
 
@@ -40,8 +38,9 @@ Update `server_ip` in settings:
 ./update-server-ip.sh
 ```
 
-Start second node:
+Start more worker nodes:
 
 ```
 vagrant up node2
+vagrant up node3
 ```
