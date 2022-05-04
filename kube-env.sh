@@ -1,7 +1,14 @@
 #!/bin/bash -e
 
 NODE="node1"
-vagrant ssh ${NODE} -c "sudo cat /etc/rancher/rke2/rke2.yaml" 2>/dev/null > kubeconfig
+
+if [ ! -e runtime ]; then
+  echo "Fail to determine runtime."
+  exit 1
+fi
+
+RUNTIME=$(cat runtime)
+vagrant ssh ${NODE} -c "sudo cat /etc/rancher/$RUNTIME/$RUNTIME.yaml" 2>/dev/null > kubeconfig
 
 IP_CIDR=$(vagrant ssh ${NODE} -c "ip  a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
 IP=${IP_CIDR%/*}
