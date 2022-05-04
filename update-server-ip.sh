@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 NODE=node1
-IP_CIDR=$(vagrant ssh ${NODE} -c "ip  a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
+IP_CIDR=$(vagrant ssh ${NODE} -c "ip a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
 IP=${IP_CIDR%/*}
 
 echo "Set server IP to $IP"
