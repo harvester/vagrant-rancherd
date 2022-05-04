@@ -31,17 +31,13 @@ end
 
 detect_runtime
 
-$script0 = <<-SCRIPT0
+$provision_prepare = <<-PROVISION_PREPARE
 zypper ref
 zypper in -y apparmor-parser iptables wget
 
-SCRIPT0
+PROVISION_PREPARE
 
-$script1 = <<-SCRIPT1
-
-curl -sfL https://github.com/rancher/wharfie/releases/download/v0.5.2/wharfie-amd64  -o /usr/local/bin/wharfie && chmod +x /usr/local/bin/wharfie
-curl -sfL https://github.com/mikefarah/yq/releases/download/v4.14.1/yq_linux_amd64 -o /usr/bin/yq && chmod +x /usr/bin/yq
-
+$provision_server_config = <<-PROVISION_SERVER_CONFIG
 cat > /etc/bash.bashrc.local <<EOF
 if [ -z "$KUBECONFIG" ]; then
     if [ -e /etc/rancher/rke2/rke2.yaml ]; then
@@ -71,20 +67,22 @@ role: cluster-init
 token: somethingrandom
 kubernetesVersion: #{@settings['kubernetes_version']}
 rancherVersion: #{@settings['rancher_version']}
-
+rancherValues:
+  noDefaultAdmin: false
+  bootstrapPassword: #{@settings['rancher_admin_passwd']}
 EOF
 
 mkdir -p /etc/rancher/rke2/config.yaml.d/
-cat > /etc/rancher/rke2/config.yaml.d/99-test.yaml << EOF
+cat > /etc/rancher/rke2/config.yaml.d/99-vagrant-rancherd.yaml << EOF
 cni: multus,canal
 disable: rke2-ingress-nginx
 
 EOF
 
-SCRIPT1
+PROVISION_SERVER_CONFIG
 
 
-$script2 = <<-SCRIPT2
+$provision_worker_config = <<-PROVISION_WORKER_CONFIG
 
 mkdir -p /etc/rancher/rancherd
 cat > /etc/rancher/rancherd/config.yaml << EOF
@@ -94,18 +92,16 @@ server: https://#{@settings['server_ip']}:8443
 EOF
 
 mkdir -p /etc/rancher/rke2/config.yaml.d/
-cat > /etc/rancher/rke2/config.yaml.d/99-test.yaml << EOF
+cat > /etc/rancher/rke2/config.yaml.d/99-vagrant-rancherd.yaml << EOF
 cni: multus,canal
 disable: rke2-ingress-nginx
 
 EOF
 
-SCRIPT2
+PROVISION_WORKER_CONFIG
 
 
-$script3 = <<-SCRIPT3
-
-set -x
+$provision_rancherd = <<-PROVISION_RANCHERD
 
 if [ "#{$workaround}" = "true" ]; then
   curl -sfL https://github.com/bk201/rancherd/releases/download/v0.0.1-alpha13-bk201.1/rancherd-amd64 -o /usr/local/bin/rancherd && chmod +x /usr/local/bin/rancherd
@@ -114,78 +110,34 @@ else
   curl -fL https://raw.githubusercontent.com/rancher/rancherd/master/install.sh | sh -
 fi
 
-SCRIPT3
+PROVISION_RANCHERD
+
 
 Vagrant.configure("2") do |config|
   config.vm.box = "opensuse/Leap-15.3.x86_64"
 
-  config.vm.define "node1" do |node|
-    node.vm.hostname = "node1"
-    node.vm.provider "libvirt" do |lv|
-      lv.connect_via_ssh = false
-      lv.qemu_use_session = false
-      lv.cpu_mode = 'host-passthrough'
-      lv.memory = 4096
-      lv.cpus = 4
+  (1..4).each do |i|
+    config.vm.define "node#{i}" do |node|
+      node.vm.hostname = "node#{i}"
+      node.vm.provider "libvirt" do |lv|
+        lv.connect_via_ssh = false
+        lv.qemu_use_session = false
+        lv.cpu_mode = 'host-passthrough'
+        lv.memory = 4096
+        lv.cpus = 4
 
-      lv.storage :file, :size => '50G'
-      lv.graphics_ip = '0.0.0.0'
+        lv.storage :file, :size => '50G'
+        lv.graphics_ip = '0.0.0.0'
+      end
+
+      node.vm.provision "shell", inline: $provision_prepare
+      # The first node is server, others are workers
+      if i > 1
+        node.vm.provision "shell", inline: $provision_worker_config
+      else
+        node.vm.provision "shell", inline: $provision_server_config
+      end
+      node.vm.provision "shell", inline: $provision_rancherd
     end
-    node.vm.provision "shell", inline: $script0
-    node.vm.provision "shell", inline: $script1
-    node.vm.provision "shell", inline: $script3
-  end
-
-  config.vm.define "node2" do |node|
-    node.vm.hostname = "node2"
-    node.vm.provider "libvirt" do |lv|
-      lv.connect_via_ssh = false
-      lv.qemu_use_session = false
-      lv.cpu_mode = 'host-passthrough'
-      lv.memory = 4096
-      lv.cpus = 4
-
-      lv.storage :file, :size => '50G'
-      lv.graphics_ip = '0.0.0.0'
-    end
-    node.vm.provision "shell", inline: $script0
-    node.vm.provision "shell", inline: $script2
-    node.vm.provision "shell", inline: $script3
-  end
-
-  config.vm.define "node3" do |node|
-    node.vm.hostname = "node3"
-    node.vm.provider "libvirt" do |lv|
-      lv.connect_via_ssh = false
-      lv.qemu_use_session = false
-      lv.cpu_mode = 'host-passthrough'
-      lv.memory = 4096
-      lv.cpus = 4
-
-      lv.storage :file, :size => '50G'
-      lv.graphics_ip = '0.0.0.0'
-    end
-    node.vm.provision "shell", inline: $script0
-    node.vm.provision "shell", inline: $script2
-    node.vm.provision "shell", inline: $script3
-  end
-
-  config.vm.define "node4" do |node|
-    node.vm.hostname = "node4"
-    node.vm.provider "libvirt" do |lv|
-      lv.connect_via_ssh = false
-      lv.qemu_use_session = false
-      lv.cpu_mode = 'host-passthrough'
-      lv.memory = 4096
-      lv.cpus = 4
-
-      lv.storage :file, :size => '50G'
-      lv.graphics_ip = '0.0.0.0'
-    end
-    node.vm.provision "shell", inline: $script0
-    node.vm.provision "shell", inline: $script2
-    node.vm.provision "shell", inline: $script3
   end
 end
-
-
