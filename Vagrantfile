@@ -1,28 +1,28 @@
 require 'yaml'
 
 $root_dir = File.dirname(File.expand_path(__FILE__))
-@settings = YAML.load_file(File.join($root_dir, "settings.yaml"))
+$settings = YAML.load_file(File.join($root_dir, "settings.yaml"))
 $workaround = "false"
 
 def detect_runtime
-  case @settings['kubernetes_version']
+  case $settings['kubernetes_version']
   when /v1.2[23].*(k3s|rke2).*/
     $workaround = "true"
   when /v1\.21.*(k3s|rke2).*/
   else
-    puts "Unsupported Kubernetes runtime #{@settings['kubernetes_version']}"
+    puts "Unsupported Kubernetes runtime #{$settings['kubernetes_version']}"
     exit(1)
   end
 
   runtime_type = ""
 
-  case @settings['kubernetes_version']
+  case $settings['kubernetes_version']
   when /.*k3s.*/
     runtime_type = "k3s"
   when /.*rke2.*/
     runtime_type = "rke2"
   else
-    puts "Unsupported Kubernetes runtime #{@settings['kubernetes_version']}"
+    puts "Unsupported Kubernetes runtime #{$settings['kubernetes_version']}"
     exit(1)
   end
 
@@ -65,11 +65,11 @@ mkdir -p /etc/rancher/rancherd
 cat > /etc/rancher/rancherd/config.yaml << EOF
 role: cluster-init
 token: somethingrandom
-kubernetesVersion: #{@settings['kubernetes_version']}
-rancherVersion: #{@settings['rancher_version']}
+kubernetesVersion: #{$settings['kubernetes_version']}
+rancherVersion: #{$settings['rancher_version']}
 rancherValues:
   noDefaultAdmin: false
-  bootstrapPassword: #{@settings['rancher_admin_passwd']}
+  bootstrapPassword: #{$settings['rancher_admin_passwd']}
 EOF
 
 mkdir -p /etc/rancher/rke2/config.yaml.d/
@@ -88,7 +88,7 @@ mkdir -p /etc/rancher/rancherd
 cat > /etc/rancher/rancherd/config.yaml << EOF
 role: agent 
 token: somethingrandom
-server: https://#{@settings['server_ip']}:8443
+server: https://#{$settings['server_ip']}:8443
 EOF
 
 mkdir -p /etc/rancher/rke2/config.yaml.d/
@@ -121,21 +121,21 @@ Vagrant.configure("2") do |config|
     config.vm.define "node#{i}" do |node|
       node.vm.hostname = "node#{i}"
       node.vm.provider "libvirt" do |lv|
-        lv.driver = @settings['driver']
+        lv.driver = $settings['driver']
         lv.connect_via_ssh = false
         lv.qemu_use_session = false
 
-        if @settings['driver'] == 'kvm'
+        if $settings['driver'] == 'kvm'
           lv.cpu_mode = 'host-passthrough'
         end
 
         lv.memory = 4096
         lv.cpus = 4
 
-        # if @settings['ci']
-        #   lv.management_network_name = 'vagrant-libvirt-ci'
-        #   lv.management_network_address = '192.168.124.0/24'
-        # end
+        if $settings['ci']
+          lv.management_network_name = 'vagrant-libvirt-ci'
+          lv.management_network_address = '192.168.124.0/24'
+        end
 
         lv.storage :file, :size => '50G'
         lv.graphics_ip = '0.0.0.0'
