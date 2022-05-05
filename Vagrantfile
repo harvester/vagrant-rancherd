@@ -102,7 +102,6 @@ PROVISION_WORKER_CONFIG
 
 
 $provision_rancherd = <<-PROVISION_RANCHERD
-
 if [ "#{$workaround}" = "true" ]; then
   curl -sfL https://github.com/bk201/rancherd/releases/download/v0.0.1-alpha13-bk201.1/rancherd-amd64 -o /usr/local/bin/rancherd && chmod +x /usr/local/bin/rancherd
   curl -fL https://raw.githubusercontent.com/bk201/rancherd/dev/install.sh | INSTALL_RANCHERD_SKIP_DOWNLOAD=true sh -
@@ -111,6 +110,28 @@ else
 fi
 
 PROVISION_RANCHERD
+
+$wait_rancherd_bootstrapped = <<-WAIT_RANCHERD
+
+echo "Waiting for Rancherd bootstrapped..."
+  retries=0
+  while [ $retries -lt 120 ]; do
+    bootstrapped=$(sudo cat /var/lib/rancher/rancherd/bootstrapped 2>/dev/null || true)
+
+    if [ -n "$bootstrapped" ]; then
+      echo "Rancherd bootstrapped."
+      exit 0
+    fi
+
+    echo "."
+    sleep 10
+    retries=$((retries+1))
+  done
+  echo "Rancherd can't bootstrap, you can check log with:"
+  echo '$ vagrant ssh node1'
+  echo '$ sudo journalctl -u rancherd'
+  exit 1
+WAIT_RANCHERD
 
 
 Vagrant.configure("2") do |config|
@@ -145,10 +166,12 @@ Vagrant.configure("2") do |config|
       # The first node is server, others are workers
       if i > 1
         node.vm.provision "shell", inline: $provision_worker_config
+        node.vm.provision "shell", inline: $provision_rancherd
       else
         node.vm.provision "shell", inline: $provision_server_config
+        node.vm.provision "shell", inline: $provision_rancherd
+        node.vm.provision "shell", inline: $wait_rancherd_bootstrapped
       end
-      node.vm.provision "shell", inline: $provision_rancherd
     end
   end
 end
