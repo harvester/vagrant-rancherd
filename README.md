@@ -44,3 +44,13 @@ Start more worker nodes:
 vagrant up node2
 vagrant up node3
 ```
+
+### Access Rancher Dashboard
+
+We can port forward to Rancher dashboard:
+
+```
+kubectl port-forward --address <bind_address> service/rancher <bind_port>:443 -n cattle-system
+```
+
+The deafult password is the `rancher_admin_passwd` value in `settings.yaml` file.
