@@ -158,7 +158,7 @@ Vagrant.configure("2") do |config|
           lv.management_network_address = '192.168.124.0/24'
         end
 
-        lv.storage :file, :size => '50G'
+        lv.storage :file, :size => '50G', :device => 'vdb'
         lv.graphics_ip = '0.0.0.0'
       end
 
