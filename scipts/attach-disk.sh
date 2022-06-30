@@ -62,7 +62,7 @@ qemu-img create -f qcow2 $FILE "${SIZE}"g
 # attach virtio-scsi controller, it's more robust for hotplugging
 if ! virsh dumpxml $DOMAIN | grep -q 'virtio-scsi'; then
   echo "Attach virtio-scsi controller to $DOMAIN"
-  virsh attach-device --domain $DOMAIN --file $CONTROLLER_XML --persistent
+  virsh attach-device --domain $DOMAIN --file $CONTROLLER_XML --live
 fi
 
 # attach device
@@ -76,4 +76,4 @@ cat > $XML_FILE <<EOF
     </disk>
 EOF
 
-virsh attach-device --domain $DOMAIN --file $XML_FILE --persistent
+virsh attach-device --domain $DOMAIN --file $XML_FILE --live
