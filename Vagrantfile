@@ -69,6 +69,7 @@ rancherVersion: #{$settings['rancher_version']}
 rancherValues:
   noDefaultAdmin: false
   bootstrapPassword: #{$settings['rancher_admin_passwd']}
+  features: multi-cluster-management=false,multi-cluster-management-agent=false
 EOF
 
 mkdir -p /etc/rancher/rke2/config.yaml.d/
