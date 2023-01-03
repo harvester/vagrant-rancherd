@@ -2,6 +2,8 @@ server_ip: 192.168.121.167
 kubernetes_version: v1.23.6+k3s1
 rancher_version: v2.6.4
 rancher_admin_passwd: admin
+cluster_size: 3
+longhorn_version: 1.4.0
 
 driver: kvm
 ci: false
