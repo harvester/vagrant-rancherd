@@ -30,9 +30,10 @@ end
 
 detect_runtime
 
+# open-iscsi is the dependency for longhorn
 $provision_prepare = <<-PROVISION_PREPARE
 zypper ref
-zypper in -y apparmor-parser iptables wget
+zypper in -y apparmor-parser iptables wget open-iscsi
 
 PROVISION_PREPARE
 
