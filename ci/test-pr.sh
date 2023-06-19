@@ -102,7 +102,6 @@ check_nodes_runtime() {
 yq e '.ci = true' $TOP_DIR/settings.yaml -i
 
 clean_vagrant
-trap clean_vagrant EXIT
 
 vagrant up node1
 wait_rancherd_bootstrap node1

@@ -4,13 +4,24 @@ on:
     branches:
       - main
   pull_request:
+
 jobs:
   provision:
     runs-on:
       - self-hosted
       - Linux
       - vagrant
+    defaults:
+      run:
+        working-directory: "vagrant-rancherd-vagrant-up-${{ github.run_number }}"
     steps:
       - uses: actions/checkout@v3
+        with:
+          path: "vagrant-rancherd-vagrant-up-${{ github.run_number }}"
       - name: Run test
         run: ./ci/test-pr.sh
+      - name: "Cleanup"
+        if: always()
+        run: |
+          vagrant destroy -f --parallel || true
+          rm -rf .vagrant

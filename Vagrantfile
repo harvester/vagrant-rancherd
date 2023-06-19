@@ -147,7 +147,7 @@ WAIT_RANCHERD
 
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "opensuse/Leap-15.3.x86_64"
+  config.vm.box = "opensuse/Leap-15.4.x86_64"
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
   (1..4).each do |i|
