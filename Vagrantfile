@@ -4,10 +4,18 @@ $root_dir = File.dirname(File.expand_path(__FILE__))
 $settings = YAML.load_file(File.join($root_dir, "settings.yaml"))
 $workaround = "false"
 $runtime_type = ""
+$psp_enabled = "true"
 
 def detect_runtime
+  # for psp configuration
   case $settings['kubernetes_version']
-  when /v1.2[234].*(k3s|rke2).*/
+  when /v1.2[56].*(k3s|rke2).*/
+    $psp_enabled = "false"
+  end
+
+  # for $workaround
+  case $settings['kubernetes_version']
+  when /v1.2[2345].*(k3s|rke2).*/
     $workaround = "true"
   when /v1\.21.*(k3s|rke2).*/
   else
@@ -71,6 +79,10 @@ rancherValues:
   noDefaultAdmin: false
   bootstrapPassword: #{$settings['rancher_admin_passwd']}
   features: multi-cluster-management=false,multi-cluster-management-agent=false
+  global:
+    cattle:
+      psp:
+        enabled: #{$psp_enabled}
 EOF
 
 mkdir -p /etc/rancher/rke2/config.yaml.d/
