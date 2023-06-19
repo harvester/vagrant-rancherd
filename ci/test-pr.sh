@@ -3,32 +3,10 @@
 TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
 KUBECTL="kubectl --kubeconfig=$TOP_DIR/kubeconfig"
 
-vagrant() {
-  docker run -i --rm \
-    -e LIBVIRT_DEFAULT_URI \
-    -v /var/run/libvirt/:/var/run/libvirt/ \
-    -v ~/.vagrant.d:/.vagrant.d \
-    -v $(realpath "${PWD}"):${PWD} \
-    -w $(realpath "${PWD}") \
-    --network host \
-    vagrantlibvirt/vagrant-libvirt:latest-slim \
-      vagrant $@
-}
-
-vagrant_ssh() {
-  machine=$1
-  shift
-  remote_command="$@"
-
-  docker run -i --rm \
-    -e LIBVIRT_DEFAULT_URI \
-    -v /var/run/libvirt/:/var/run/libvirt/ \
-    -v ~/.vagrant.d:/.vagrant.d \
-    -v $(realpath "${PWD}"):${PWD} \
-    -w $(realpath "${PWD}") \
-    --network host \
-    vagrantlibvirt/vagrant-libvirt:latest-slim \
-      vagrant ssh $machine -c "$remote_command"
+clean_vagrant() {
+  cd $TOP_DIR
+  vagrant destroy -f --parallel
+  rm -rf .vagrant
 }
 
 wait_rancherd_bootstrap() {
@@ -37,7 +15,7 @@ wait_rancherd_bootstrap() {
   echo "Waiting for Rancherd bootstrapped..."
   retries=0
   while [ $retries -lt 360 ]; do
-    bootstrapped=$(vagrant_ssh $node sudo cat /var/lib/rancher/rancherd/bootstrapped 2>/dev/null || true)
+    bootstrapped=$(vagrant ssh $node -c "sudo cat /var/lib/rancher/rancherd/bootstrapped" 2>/dev/null || true)
 
     if [ -n "$bootstrapped" ]; then
       echo "Rancherd bootstrapped on $node."
@@ -50,13 +28,13 @@ wait_rancherd_bootstrap() {
   done
   echo "Timeout!"
   echo "===== Rancherd log ======"
-  vagrant_ssh $node sudo journalctl -u rancherd
+  vagrant ssh $node -c "sudo journalctl -u rancherd"
   exit 1
 }
 
 update_server_ip() {
   server=$1
-  IP_CIDR=$(vagrant_ssh $server "ip a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
+  IP_CIDR=$(vagrant ssh $server -c "ip a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
   IP=${IP_CIDR%/*}
   if [ -z "$IP" ]; then
     echo "Can't get node1 IP."
@@ -76,9 +54,9 @@ kube_env() {
   RUNTIME=$(cat $TOP_DIR/runtime)
   CONFIG_FILE="/etc/rancher/$RUNTIME/$RUNTIME.yaml"
   echo "Downloading $CONFIG_FILE to $TOP_DIR/kubeconfig"
-  vagrant_ssh $node sudo cat $CONFIG_FILE 2>/dev/null > $TOP_DIR/kubeconfig
+  vagrant ssh $node -c "sudo cat $CONFIG_FILE" 2>/dev/null > $TOP_DIR/kubeconfig
 
-  IP_CIDR=$(vagrant_ssh $node "ip a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
+  IP_CIDR=$(vagrant ssh $node -c "ip a show eth0 | grep \"inet \" | awk '{print \$2}'" 2>/dev/null)
   IP=${IP_CIDR%/*}
   sed -i "s,127.0.0.1:6443,$IP:6443," $TOP_DIR/kubeconfig
   cat $TOP_DIR/kubeconfig
@@ -121,10 +99,10 @@ check_nodes_runtime() {
   done
 }
 
-if ! sudo kvm-ok; then
-  yq e '.driver = "qemu"' $TOP_DIR/settings.yaml -i
-fi
 yq e '.ci = true' $TOP_DIR/settings.yaml -i
+
+clean_vagrant
+trap clean_vagrant EXIT
 
 vagrant up node1
 wait_rancherd_bootstrap node1
