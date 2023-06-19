@@ -3,6 +3,12 @@
 TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
 KUBECTL="kubectl --kubeconfig=$TOP_DIR/kubeconfig"
 
+clean_vagrant() {
+  cd $TOP_DIR
+  vagrant destroy -f --parallel
+  rm -rf .vagrant
+}
+
 vagrant() {
   docker run -i --rm \
     -e LIBVIRT_DEFAULT_URI \
@@ -121,10 +127,10 @@ check_nodes_runtime() {
   done
 }
 
-if ! sudo kvm-ok; then
-  yq e '.driver = "qemu"' $TOP_DIR/settings.yaml -i
-fi
 yq e '.ci = true' $TOP_DIR/settings.yaml -i
+
+clean_vagrant
+trap clean_vagrant EXIT
 
 vagrant up node1
 wait_rancherd_bootstrap node1

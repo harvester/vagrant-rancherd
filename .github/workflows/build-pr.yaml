@@ -1,15 +1,16 @@
 name: Vagrant up
 on: 
- pull_request:
+  push:
+    branches:
+      - main
+  pull_request:
 jobs:
-  k3s-1-23:
-    runs-on: self-hosted
+  provision:
+    runs-on:
+      - self-hosted
+      - Linux
+      - vagrant
     steps:
-      - uses: actions/checkout@v2
-      - name: Install packages
-        run: |
-          set -x
-          sudo apt-get update
-          sudo apt-get install -y libvirt-clients libvirt-daemon-system
+      - uses: actions/checkout@v3
       - name: Run test
         run: ./ci/test-pr.sh
