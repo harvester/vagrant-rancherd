@@ -72,7 +72,7 @@ cat > $XML_FILE <<EOF
       <driver name='qemu' type='qcow2'/>
       <source file='$FILE'/>
       <target dev='$TARGET' bus='scsi'/>
-      <wwn>0x5000c50015$(date +%s | sha512sum | head -c 6)</wwn>
+      <wwn>0x5000c50015$(date +%N | sha512sum | head -c 6)</wwn>
     </disk>
 EOF
 
