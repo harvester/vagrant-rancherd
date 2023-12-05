@@ -25,29 +25,45 @@ wait_longhorn_ready() {
     sleep 10
   done
 
-  # ensure instance-manager-e ready
-  while [ true ]; do
-    running_num=$(kubectl get pods -n longhorn-system |grep ^instance-manager-e |grep Running |awk '{print $3}' |wc -l)
-    if [[ $running_num -eq ${cluster_nodes} ]]; then
-      echo "instance-manager-e pods are ready!"
-      break
-    fi
-    echo "instance-manager-e ready number: $running_num"
-    echo "sleeping 10 seconds"
-    sleep 10
-  done
-  
-  # ensure instance-manager-r ready
-  while [ true ]; do
-    running_num=$(kubectl get pods -n longhorn-system |grep ^instance-manager-r |grep Running |awk '{print $3}' |wc -l)
-    if [[ $running_num -eq ${cluster_nodes} ]]; then
-      echo "instance-manager-r pods are ready!"
-      break
-    fi
-    echo "instance-manager-r ready number: $running_num"
-    echo "sleeping 10 seconds"
-    sleep 10
-  done
+  # longhorn v1.5.0 and later version do not have instance-manager-e/instance-manager-r
+  # Checking the instance-manager
+  if [[ ${longhorn_version} == "1.5.0" || ${longhorn_version} > "1.5.0" ]]; then
+    while [ true ]; do
+      running_num=$(kubectl get pods -n longhorn-system |grep ^instance-manager |grep Running |awk '{print $3}' |wc -l)
+      if [[ $running_num -eq ${cluster_nodes} ]]; then
+        echo "instance-manager pods are ready!"
+        break
+      fi
+      echo "instance-manager ready number: $running_num"
+      echo "sleeping 10 seconds"
+      sleep 10
+    done
+  else
+    # v1.4.x and berfore version
+    # ensure instance-manager-e ready
+    while [ true ]; do
+      running_num=$(kubectl get pods -n longhorn-system |grep ^instance-manager-e |grep Running |awk '{print $3}' |wc -l)
+      if [[ $running_num -eq ${cluster_nodes} ]]; then
+        echo "instance-manager-e pods are ready!"
+        break
+      fi
+      echo "instance-manager-e ready number: $running_num"
+      echo "sleeping 10 seconds"
+      sleep 10
+    done
+
+    # ensure instance-manager-r ready
+    while [ true ]; do
+      running_num=$(kubectl get pods -n longhorn-system |grep ^instance-manager-r |grep Running |awk '{print $3}' |wc -l)
+      if [[ $running_num -eq ${cluster_nodes} ]]; then
+        echo "instance-manager-r pods are ready!"
+        break
+      fi
+      echo "instance-manager-r ready number: $running_num"
+      echo "sleeping 10 seconds"
+      sleep 10
+    done
+  fi
 }
 
 if [ ! -f $TOP_DIR/kubeconfig ]; then
