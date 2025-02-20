@@ -115,6 +115,58 @@ PROVISION_WORKER_CONFIG
 
 
 $provision_rancherd = <<-PROVISION_RANCHERD
+# This is a workaround for https://github.com/rancher/rancherd/commit/13285fa59ca51858f4c4dff4b19cc420ba381986
+# After this commit, rancherd requires the 91-harvester-bootstrap-repo.yaml file to bootstrap successfully.
+mkdir -p /usr/share/rancher/rancherd/config.yaml.d
+cat > /usr/share/rancher/rancherd/config.yaml.d/91-harvester-bootstrap-repo.yaml << EOF
+resources:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: harvester-cluster-repo
+    namespace: cattle-system
+  spec:
+    selector:
+      matchLabels:
+        app: harvester-cluster-repo
+    replicas: 1
+    template:
+      metadata:
+        labels:
+          app: harvester-cluster-repo
+      spec:
+        containers:
+        - name: httpd
+          image: rancher/harvester-cluster-repo:v1.5-head
+          ports:
+          - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /charts/index.yaml
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: harvester-cluster-repo
+    namespace: cattle-system
+  spec:
+    selector:
+      app: harvester-cluster-repo
+    ports:
+      - protocol: TCP
+        port: 80
+        targetPort: 80
+- apiVersion: catalog.cattle.io/v1
+  kind: ClusterRepo
+  metadata:
+    name: harvester-charts
+  spec:
+    url: http://harvester-cluster-repo.cattle-system/charts"
+
+EOF
+
 if [ "#{$workaround}" = "true" ]; then
   curl -fL https://raw.githubusercontent.com/rancher/rancherd/harvester-dev/install.sh | sh -
 else
