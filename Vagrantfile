@@ -116,7 +116,7 @@ PROVISION_WORKER_CONFIG
 
 $provision_rancherd = <<-PROVISION_RANCHERD
 if [ "#{$workaround}" = "true" ]; then
-  curl -fL https://raw.githubusercontent.com/rancher/rancherd/harvester-dev/install.sh | sh -
+  curl -fL https://raw.githubusercontent.com/rancher/rancherd/harvester-dev/install.sh | INSTALL_RANCHERD_VERSION=v0.3.0-rc1 sh -
 else
   curl -fL https://raw.githubusercontent.com/rancher/rancherd/master/install.sh | sh -
 fi
