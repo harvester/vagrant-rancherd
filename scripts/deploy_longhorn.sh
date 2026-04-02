@@ -76,7 +76,7 @@ export KUBECONFIG=$TOP_DIR/kubeconfig
 if [[ $(ensure_command helm) -eq 1 ]]; then
   echo "no helm, try to curl..."
   curl -O https://get.helm.sh/helm-v3.20.0-linux-amd64.tar.gz
-  echo "dbb4c8fc8e19d159d1a63dda8db655f9ffa4aac1b9a6b188b34a40957119b286 helm-v3.20.0-linux-amd64.tar.gz" | sha256sum -c -
+  echo "dbb4c8fc8e19d159d1a63dda8db655f9ffa4aac1b9a6b188b34a40957119b286  helm-v3.20.0-linux-amd64.tar.gz" | sha256sum -c -
   tar -zxvf helm-v3.20.0-linux-amd64.tar.gz
   HELM=$TOP_DIR/linux-amd64/helm
   $HELM version
